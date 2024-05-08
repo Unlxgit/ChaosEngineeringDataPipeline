@@ -1,7 +1,7 @@
 kubectl delete deployment --all
 kubectl delete service --all
-docker build -t prime:latest ./src/prediction/
-docker build -t connection:latest ./src/connection/
+docker build -t forecast:latest ./src/forecast/
+docker build -t api-gateway:latest ./src/gateway/
 kubectl apply -f ./deploy/deployment.yaml
 
-minikube service prime-consumer-service -n prime --url
+minikube service api-gateway-service -n gasai --url

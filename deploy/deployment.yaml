@@ -1,36 +1,35 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: prime-service
+  name: forecast-service
 spec:
-  type: NodePort
+  type: ClusterIP
   selector:
-    app: prime
+    app: forecast
   ports:
     - protocol: TCP
       port: 80
-      nodePort: 30000
 
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: prime-deployment
+  name: forecast-deployment
   labels:
-    app: prime
+    app: forecast
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: prime
+      app: forecast
   template:
     metadata:
       labels:
-        app: prime
+        app: forecast
     spec:
       containers:
-      - name: prime
-        image: prime:latest
+      - name: forecast
+        image: forecast:latest
         imagePullPolicy: Never
         ports:
         - containerPort: 80
@@ -38,34 +37,34 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: prime-consumer-service
+  name: api-gateway-service
 spec:
   selector:
-    app: prime-consumer
+    app: api-gateway
   ports:
     - protocol: TCP
       port: 80
-      nodePort: 30001
+      nodePort: 30000
   type: NodePort
 
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: prime-consumer-deployment
+  name: api-gateway-deployment
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: prime-consumer
+      app: api-gateway
   template:
     metadata:
       labels:
-        app: prime-consumer
+        app: api-gateway
     spec:
       containers:
-      - name: prime-consumer
-        image: connection:latest
+      - name: api-gateway
+        image: api-gateway:latest
         imagePullPolicy: Never
         ports:
         - containerPort: 80

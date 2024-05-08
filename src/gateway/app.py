@@ -4,7 +4,7 @@ app = Flask(__name__)
 
 @app.route("/")
 def get_prime_info():
-    prime_service_url = "http://prime-service.prime.svc.cluster.local"  # Kubernetes service DNS
+    prime_service_url = "http://forecast-service.gasai.svc.cluster.local"  # Kubernetes service DNS
     endpoint = "/"  # Assuming this endpoint exists in prime-service
 
     try:
