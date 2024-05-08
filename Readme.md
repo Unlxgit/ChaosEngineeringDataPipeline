@@ -6,7 +6,7 @@ minikube -p minikube docker-env | Invoke-Expression
 
 minikube tunnel
 minikube service list
-minikube service prime-service -n prime --url
+minikube service prime-consumer-service -n prime --url
 
 
 kubectl delete deployment --all
@@ -17,12 +17,13 @@ kubectl config set-context --current --namespace=prime
 
 
 docker build -t prime:latest .\src\prediction\
+docker build -t connection:latest .\src\connection\
 kubectl apply -f ./deploy/deployment.yaml
 
+minikube service prime-consumer-service -n prime --url
 
 
-docker build -t connection:latest .\src\connection\
-kubectl apply -f ./deploy/deploymentv2.yaml
+
 
 
 
