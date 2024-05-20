@@ -1,7 +1,9 @@
+import random
 import time
 import logging
 import os
 import psycopg2
+import math
 
 # Database connection parameters
 DB_NAME = 'mydatabase'
@@ -30,23 +32,31 @@ def connect_to_db():
 
 def create_table_if_not_exists(connection):
     with connection.cursor() as cursor:
+        # Create the table if it does not exist with number (double) and id (serial) columns and time (timestamp)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS numbers (
                 id SERIAL PRIMARY KEY,
-                number INTEGER NOT NULL
-            );
+                number DOUBLE PRECISION,
+                time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
         """)
         connection.commit()
         logging.info("Created table 'numbers' if it did not exist")
 
-def insert_number(connection, number):
+def insert_number(connection, number, time):
     with connection.cursor() as cursor:
-        cursor.execute("INSERT INTO numbers (number) VALUES (%s)", (number,))
+        cursor.execute("""
+            INSERT INTO numbers (number, time) VALUES (%s, %s)
+        """, (number, time))
         connection.commit()
-        logger.info(f"Inserted number: {number}")
+        logger.info(f"Inserted number: {number} with time: {time}")
 
 
-
+# one cycle per 20 minutes
+def time_to_sin(current_time):
+    T = 1200
+    sin_measure = math.sin((2 * math.pi / T) * current_time)
+    return sin_measure
 
 def main():
     connection = None
@@ -56,11 +66,17 @@ def main():
             logger.info("Retrying database connection in 5 seconds")
             time.sleep(5)
     create_table_if_not_exists(connection)
-    number = 1
+
     while True:
-        insert_number(connection, number)
-        number += 1
-        time.sleep(60)
+        current_time = time.time()
+        current_price = time_to_sin(current_time)
+        if random.random() > 0.5:
+            insert_number(connection, current_price, current_time)
+        # Sleep until the next full minute
+        time_of_next_full_minute = math.ceil(time.time() / 60) * 60
+        time_until_next_full_minute = time_of_next_full_minute - time.time()
+        time.sleep(time_until_next_full_minute)
+
 
 if __name__ == '__main__':
     main()
