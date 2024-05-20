@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gas-price-pull-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gas-price-pull
+  template:
+    metadata:
+      labels:
+        app: gas-price-pull
+    spec:
+      containers:
+      - name: gas-price-pull
+        image: gas-price-pull:latest
+        imagePullPolicy: Never
+        resources:
+          limits:
+            memory: 64Mi
+            cpu: 100m
+        ports:
+        - containerPort: 80

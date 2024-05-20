@@ -42,8 +42,13 @@ def cache(key, value):
         return None
 
 
-@app.route("/")
-def get_prime_info():
+@app.route("/", methods=['GET'])
+def check_liveliness():
+    return 'Service alive'
+
+
+@app.route("/forecast", methods=['GET'])
+def get_forecast():
     prime_service_url = "http://forecast-service.gasai.svc.cluster.local"
     endpoint = "/"
     current_time_stamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")

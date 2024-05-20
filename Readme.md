@@ -21,8 +21,8 @@ minikube service api-gateway-service -n gasai --url
 kubectl describe deployment prime-deployment -n prime
 
 
-kubectl get pods -n prime
+kubectl get pods -n gasai
 
-kubectl describe pod redis-56649c6984-7nkcr -n gasai
+kubectl describe pod gas-price-pull-deployment-dddb88475-7mvwg -n gasai
 
-kubectl logs prime-consumer-deployment-66bff547d9-8jztb -n prime
+kubectl logs gas-price-pull-deployment-dddb88475-7mvwg -n gasai
