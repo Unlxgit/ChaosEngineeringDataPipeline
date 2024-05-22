@@ -71,10 +71,13 @@ def main():
         current_time = time.time()
         current_price = time_to_sin(current_time)
         if random.random() > 0.5:
-            insert_number(connection, current_price, current_time)
+            time_to_go_of = math.floor(current_time/60) * 60
+            timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time_to_go_of))
+            insert_number(connection, current_price, timestamp)
         # Sleep until the next full minute
         time_of_next_full_minute = math.ceil(time.time() / 60) * 60
-        time_until_next_full_minute = time_of_next_full_minute - time.time()
+        # 0.001 seconds to make sure we are in the next minute
+        time_until_next_full_minute = time_of_next_full_minute - time.time() + 0.001
         time.sleep(time_until_next_full_minute)
 
 

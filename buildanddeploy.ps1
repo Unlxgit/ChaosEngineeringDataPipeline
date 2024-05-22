@@ -1,5 +1,7 @@
 kubectl delete deployment --all
 kubectl delete service --all
+# kubectl delete pvc --all
+# kubectl delete pv --all
 
 docker build -t forecast:latest ./src/forecast/
 docker build -t api-gateway:latest ./src/gateway/

@@ -1,2 +1,6 @@
 flask
 redis
+psycopg2-binary
+pandas
+scikit-learn
+
