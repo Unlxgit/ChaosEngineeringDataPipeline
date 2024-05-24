@@ -1,18 +1,18 @@
-FROM python:3.10-alpine
+FROM jupyter/scipy-notebook
 
 COPY ../.. /app/
 WORKDIR /app
 
-RUN apk update && apk upgrade && apk add --no-cache \
-    bash \
-    git \
-    openssh \
-    build-base \
-    postgresql-dev \
-    gcc \
-    libc-dev \
-    musl-dev \
-    linux-headers
+USER root
+
+#RUN apt-get update && \
+#    apt-get upgrade -y && \
+#    apt-get install -y --no-install-recommends \
+#    bash \
+#    git \
+#    openssh-client && \
+#    apt-get clean && \
+#    rm -rf /var/lib/apt/lists/*
 
 RUN pip3 install -r requirements.txt --verbose
 

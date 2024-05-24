@@ -32,24 +32,23 @@ def connect_to_db():
 
 def create_table_if_not_exists(connection):
     with connection.cursor() as cursor:
-        # Create the table if it does not exist with number (double) and id (serial) columns and time (timestamp)
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS numbers (
+            CREATE TABLE IF NOT EXISTS price_history (
                 id SERIAL PRIMARY KEY,
-                number DOUBLE PRECISION,
+                price DOUBLE PRECISION,
                 time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
         connection.commit()
         logging.info("Created table 'numbers' if it did not exist")
 
-def insert_number(connection, number, time):
+def insert_price(connection, price, time):
     with connection.cursor() as cursor:
         cursor.execute("""
-            INSERT INTO numbers (number, time) VALUES (%s, %s)
-        """, (number, time))
+            INSERT INTO price_history (price, time) VALUES (%s, %s)
+        """, (price, time))
         connection.commit()
-        logger.info(f"Inserted number: {number} with time: {time}")
+        logger.info(f"Inserted price: {price} with time: {time}")
 
 
 # one cycle per 20 minutes
@@ -73,7 +72,7 @@ def main():
         if random.random() > 0.5:
             time_to_go_of = math.floor(current_time/60) * 60
             timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time_to_go_of))
-            insert_number(connection, current_price, timestamp)
+            insert_price(connection, current_price, timestamp)
         # Sleep until the next full minute
         time_of_next_full_minute = math.ceil(time.time() / 60) * 60
         # 0.001 seconds to make sure we are in the next minute
