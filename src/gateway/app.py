@@ -50,7 +50,7 @@ def check_liveliness():
 @app.route("/forecast", methods=['GET'])
 def get_forecast():
     prime_service_url = "http://forecast-service.gasai.svc.cluster.local"
-    endpoint = "/"
+    endpoint = "/forecast"
     current_time_stamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
 
     try:

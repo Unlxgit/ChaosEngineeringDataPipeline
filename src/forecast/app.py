@@ -94,7 +94,11 @@ def get_forecast(train_x, train_y, current):
 
 
 @app.route("/", methods=['GET'])
-def get_hello():
+def check_liveliness():
+    return 'Service alive'
+
+@app.route("/forecast", methods=['GET'])
+def forecast():
     connection = connect_to_db()
     if connection is None:
         return "Error connecting to database", 500
