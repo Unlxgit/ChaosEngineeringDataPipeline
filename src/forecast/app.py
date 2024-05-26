@@ -7,6 +7,7 @@ import logging
 import psycopg2
 import pandas as pd
 from sklearn.tree import DecisionTreeRegressor
+from retry import retry
 
 app = Flask(__name__)
 
@@ -18,28 +19,19 @@ DB_PORT = '5432'
 logging.basicConfig(level=logging.INFO)
 
 
+@retry(tries=4, delay=0.05)
 def connect_to_db():
-    try:
-        connection = psycopg2.connect(
-            dbname=DB_NAME,
-            user=DB_USER,
-            password=DB_PASSWORD,
-            host=DB_HOST,
-            port=DB_PORT
-        )
-        return connection
-    except psycopg2.OperationalError as e:
-        app.logger.error(f"Error connecting to database: {e}")
-        return None
+    connection = psycopg2.connect(
+        dbname=DB_NAME,
+        user=DB_USER,
+        password=DB_PASSWORD,
+        host=DB_HOST,
+        port=DB_PORT
+    )
+    return connection
 
 
-def get_current_data_point(connection):
-    with connection.cursor() as cursor:
-        cursor.execute("SELECT price, time FROM price_history ORDER BY time DESC LIMIT 1")
-        result = cursor.fetchone()
-        return result
-
-
+@retry(tries=4, delay=0.05)
 def get_data(connection):
     with connection.cursor() as cursor:
         cursor.execute("SELECT time, price  FROM price_history ORDER BY time")
@@ -97,33 +89,53 @@ def get_forecast(train_x, train_y, current):
 def check_liveliness():
     return 'Service alive'
 
+
 @app.route("/forecast", methods=['GET'])
 def forecast():
-    connection = connect_to_db()
-    if connection is None:
-        return "Error connecting to database", 500
-    df = get_data(connection)
-    df = df.dropna()
-    if df.empty:
-        return "No data found", 404
-    current_minute = math.floor(time.time() / 60) * 60
+    try:
+        connection = None
+        try:
+            connection = connect_to_db()
+        except Exception as e:
+            app.logger.error(f"Error connecting to database: {str(e)}")
+            return jsonify({"error": "Error connecting to database"}), 500
 
-    df = clean_data(df, current_minute)
+        df = None
 
-    app.logger.info(f"Making predictions with {df.shape[0]} data points.")
+        try:
+            df = get_data(connection)
+        except Exception as e:
+            app.logger.error(f"Error getting data from database: {str(e)}")
+            return jsonify({"error": "Error getting data from database"}), 500
 
-    if df.shape[0] < 6:
-        app.logger.info("Not enough data for prediction. Datapoints: ", df.shape[0])
-        # not enough data for prediction -> answer with latest data point
-        latest_price = df.values[-1][1]
-        return build_response(current_minute, latest_price, latest_price)
+        if df is None:
+            app.logger.error("Faulty data query. No data found.")
+            return jsonify({"error": "Faulty data query. No data found"}), 500
 
-    train_x, train_y = get_train_data(df)
+        df = df.dropna()
+        if df.empty:
+            app.logger.error("No data found")
+            return jsonify({"error": "No data found"}), 404
 
-    prediction = get_forecast(train_x, train_y, df['price'].values[-5:])
+        current_minute = math.floor(time.time() / 60) * 60
+        df = clean_data(df, current_minute)
 
-    latest_price = df['price'].values[-1]
+        app.logger.info(f"Making predictions with {df.shape[0]} data points.")
 
-    return build_response(current_minute, latest_price, prediction)
+        if df.shape[0] < 6:
+            app.logger.info(f"Not enough data for prediction using latest price instead. Datapoints: {df.shape[0]}")
+            latest_price = df['price'].values[-1]
+            return build_response(current_minute, latest_price, latest_price)
+
+        train_x, train_y = get_train_data(df)
+        prediction = get_forecast(train_x, train_y, df['price'].values[-5:])
+        latest_price = df['price'].values[-1]
+
+        return build_response(current_minute, latest_price, prediction)
+
+    except Exception as e:
+        app.logger.exception("An error occurred during forecast generation")
+        return jsonify({"error": str(e)}), 500
+
 
 app.run(host='0.0.0.0', port=80)

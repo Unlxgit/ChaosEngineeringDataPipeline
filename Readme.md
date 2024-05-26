@@ -27,6 +27,6 @@ kubectl describe pod gas-price-pull-deployment-dddb88475-7mvwg -n gasai
 
 kubectl logs gas-price-pull-deployment-dddb88475-7mvwg -n gasai
 
-kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+kubectl apply -f ./deploy/metrix_server.yaml
 
 kubectl logs -n kube-system metrics-server-7ffbc6d68-2566c 

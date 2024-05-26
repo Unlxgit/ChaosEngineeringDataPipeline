@@ -1,9 +1,10 @@
-from flask import Flask
+from flask import Flask, jsonify
 import requests
 import redis
 import os
 import logging
 import datetime
+from retry import retry
 
 app = Flask(__name__)
 
@@ -18,8 +19,16 @@ redis_client = redis.StrictRedis(host=redis_host, port=redis_port, password=redi
 logging.basicConfig(level=logging.INFO)
 
 
+def get_current_data_point(connection):
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT price, time FROM price_history ORDER BY time DESC LIMIT 1")
+        result = cursor.fetchone()
+        return result
+
+
 def lookup(key):
-    try:
+    @retry(tries=4, delay=0.05)
+    def inner_lookup(key):
         value = redis_client.get(key)
         if value:
             app.logger.info(f"Redis lookup of key {key} succeeded.")
@@ -27,19 +36,44 @@ def lookup(key):
         else:
             app.logger.info(f"Redis lookup of key {key} failed. No data.")
             return None
-    except Exception as ex:
-        app.logger.error(f"Redis lookup for {key} failed due to {ex}")
+    try:
+        return inner_lookup(key)
+    except Exception as e:
+        app.logger.error(f"Redis not available: {str(e)}")
         return None
 
 
 def cache(key, value):
-    try:
+    @retry(tries=4, delay=0.05)
+    def inner_cache(key, value):
         redis_client.set(key, value)
-        app.logger.info(f"Successfully cached value for key {key}.")
-        return value
-    except Exception as ex:
-        app.logger.error(f"Redis write for {key} failed due to {ex}")
-        return None
+        app.logger.info(f"Successfully cached value for key {key}")
+    try:
+        inner_cache(key, value)
+    except Exception as e:
+        app.logger.error(f"Failed to cache value: {str(e)}")
+
+
+
+
+def get_forecast():
+    @retry(tries=4, delay=0.05)
+    def inner_get_forecast():
+        prime_service_url = "http://forecast-service.gasai.svc.cluster.local"
+        endpoint = "/forecast"
+        response = requests.get(prime_service_url + endpoint)
+        if response.status_code == 200:
+            return response
+
+        app.logger.error(f"Failed to retrieve forecast from forecast-service. Status code: {response.status_code}")
+        raise requests.exceptions.RequestException("Failed to retrieve forecast from forecast-service.")
+
+    try:
+        return inner_get_forecast()
+    except requests.exceptions.RequestException as e:
+        prime_service_url = "http://forecast-service.gasai.svc.cluster.local"
+        endpoint = "/forecast"
+        return requests.get(prime_service_url + endpoint)
 
 
 @app.route("/", methods=['GET'])
@@ -48,23 +82,25 @@ def check_liveliness():
 
 
 @app.route("/forecast", methods=['GET'])
-def get_forecast():
-    prime_service_url = "http://forecast-service.gasai.svc.cluster.local"
-    endpoint = "/forecast"
+def forecast():
     current_time_stamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
 
-    try:
-        lookup_response = lookup(current_time_stamp)
-        if lookup_response:
-            return f"The response was looked up and is {lookup_response} at {current_time_stamp}"
+    lookup_response = lookup(current_time_stamp)
+    if lookup_response:
+        return jsonify(eval(lookup_response)), 200
 
-        response = requests.get(prime_service_url + endpoint)
+    try:
+        response = get_forecast()
+
         if response.status_code == 200:
-            prime_info = response.json()
-            cache(current_time_stamp, str(prime_info))  # Cache the response as a string
-            return str(prime_info) + current_time_stamp
-        else:
-            return {"error": "Failed to retrieve prime info"}
+            price_info = response.json()
+            cache(current_time_stamp, str(price_info))
+            return jsonify(price_info), 200
+
+        elif response.status_code == 500 and "database" in response.json().get('error'):
+            return jsonify({"error": "Service unavailable"}), 500
+
+
     except requests.exceptions.RequestException as e:
         return {"error": str(e)}
 
