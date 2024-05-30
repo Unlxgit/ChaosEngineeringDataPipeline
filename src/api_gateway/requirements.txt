@@ -2,3 +2,4 @@ flask
 requests
 redis
 retry
+psycopg2-binary

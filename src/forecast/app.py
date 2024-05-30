@@ -92,6 +92,8 @@ def health():
 
 @app.route('/ready')
 def ready():
+    if connect_to_db() is None:
+        return jsonify(status="error"), 500
     return jsonify(status="ok"), 200
 
 
