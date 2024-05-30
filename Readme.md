@@ -23,7 +23,7 @@ kubectl describe deployment prime-deployment -n prime
 
 kubectl get pods -n gasai
 
-kubectl describe pod gas-price-pull-deployment-dddb88475-7mvwg -n gasai
+kubectl describe pod api-gateway-deployment-67657bc644-7cgnw -n gasai
 
 kubectl logs gas-price-pull-deployment-dddb88475-7mvwg -n gasai
 

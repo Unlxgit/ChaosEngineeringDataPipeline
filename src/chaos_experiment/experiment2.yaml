@@ -197,18 +197,6 @@ spec:
           claimName: redis-volume-claim
 ---
 apiVersion: v1
-kind: Service
-metadata:
-  name: redis-service
-spec:
-  selector:
-    app: redis
-  ports:
-    - protocol: TCP
-      port: 6379
-      targetPort: 6379
----
-apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: redis-volume-claim

@@ -85,9 +85,14 @@ def get_forecast(train_x, train_y, current):
     return prediction
 
 
-@app.route("/", methods=['GET'])
-def check_liveliness():
-    return 'Service alive'
+@app.route('/health')
+def health():
+    return jsonify(status="ok"), 200
+
+
+@app.route('/ready')
+def ready():
+    return jsonify(status="ok"), 200
 
 
 @app.route("/forecast", methods=['GET'])

@@ -36,6 +36,7 @@ def lookup(key):
         else:
             app.logger.info(f"Redis lookup of key {key} failed. No data.")
             return None
+
     try:
         return inner_lookup(key)
     except Exception as e:
@@ -48,12 +49,11 @@ def cache(key, value):
     def inner_cache(key, value):
         redis_client.set(key, value)
         app.logger.info(f"Successfully cached value for key {key}")
+
     try:
         inner_cache(key, value)
     except Exception as e:
         app.logger.error(f"Failed to cache value: {str(e)}")
-
-
 
 
 def get_forecast():
@@ -76,9 +76,14 @@ def get_forecast():
         return requests.get(prime_service_url + endpoint)
 
 
-@app.route("/", methods=['GET'])
-def check_liveliness():
-    return 'Service alive'
+@app.route('/health')
+def health():
+    return jsonify(status="ok"), 200
+
+
+@app.route('/ready')
+def ready():
+    return jsonify(status="ok"), 200
 
 
 @app.route("/forecast", methods=['GET'])
