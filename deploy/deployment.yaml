@@ -35,6 +35,11 @@ spec:
   selector:
     matchLabels:
       app: forecast
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
   template:
     metadata:
       labels:
@@ -103,6 +108,11 @@ spec:
   selector:
     matchLabels:
       app: api-gateway
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
   template:
     metadata:
       labels:
